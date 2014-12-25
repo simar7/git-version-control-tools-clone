@@ -1,0 +1,93 @@
+#!/bin/bash
+
+set -e
+
+if [ ! -d venv ]; then
+  virtualenv venv
+fi
+
+source venv/bin/activate
+pip install --upgrade pip
+pip install --upgrade -r test-requirements.txt
+
+# ReviewBoard doesn't work with pip, sadly.
+easy_install ReviewBoard==2.0.11
+
+cd pylib/Bugsy
+python setup.py develop
+cd ../..
+
+# rbmozui requires Node.js when installed normally. But in local
+# development mode it doesn't. So use local development node.
+cd pylib/rbmozui;
+python setup.py develop
+cd ../..
+
+cd pylib/rbbz
+python setup.py develop
+cd ../..
+
+cd hghooks
+python setup.py develop
+cd ..
+
+# Collect code coverage from all Python processes if environment variable
+# is set.
+cat > venv/bin/sitecustomize.py << EOF
+import os
+
+if os.environ.get('CODE_COVERAGE', False):
+    import uuid
+    import coverage
+
+    covpath = os.path.join(os.environ['COVERAGE_DIR'],
+        'coverage.%s' % uuid.uuid1())
+    cov = coverage.coverage(data_file=covpath, auto_data=True)
+    cov._warn_no_data = False
+    cov._warn_unimported_source = False
+    cov.start()
+EOF
+
+# Ensure system settings don't sneak in and change behavior.
+export HGRCPATH=/dev/null
+
+# Install various Mercurial versions for multi-version testing.
+if [ ! -d venv/hg ]; then
+  hg clone http://selenic.com/repo/hg venv/hg
+fi
+
+hg -R venv/hg pull
+
+mercurials=`pwd`/venv/mercurials
+
+for old in 2.5.4 2.6 2.6.1 2.6.2 2.6.3 2.7 2.7.1 2.7.2 2.8 2.8.1 2.8.2 2.9 2.9.1 2.9.2 3.0 3.0.1 3.1 3.1.1; do
+  rm -rf $mercurials/$old
+done
+
+for v in 3.0.2 3.1.2 3.2 3.2.1 3.2.2 3.2.3; do
+  destdir=$mercurials/$v
+  if [ ! -d $destdir ]; then
+    cd venv/hg
+    hg up $v
+    make install-bin PREFIX=$destdir
+    hg --config extensions.purge= purge --all
+    cd ../..
+  fi
+done
+
+# Install the bleeding edge of Mercurial so we find regressions early.
+rm -rf $mercurials/@
+cd venv/hg
+hg up @
+make install-bin PREFIX=$mercurials/@
+hg --config extensions.purge= purge --all
+cd ../..
+echo finished installing Mercurials
+
+DOCKER_STATE_FILE=.docker-state.json testing/docker-control.py build-bmo || {
+  echo "You will not be able to run tests that require Docker.";
+  echo "Please see https://docs.docker.com/installation/ for how to install Docker.";
+  echo "When Docker is installed, re-run this script";
+}
+
+echo finished creating test environment

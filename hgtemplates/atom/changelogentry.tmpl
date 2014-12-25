@@ -1,0 +1,12 @@
+ <entry>
+  <title>{desc|strip|firstline|strip|escape|nonempty}</title>
+  <id>{urlbase}{url}#changeset-{node}</id>
+  <link href="{urlbase}{url}rev/{node|short}"/>
+  <author>
+   <name>{author|person|escape}</name>
+   <email>{author|email|obfuscate}</email>
+  </author>
+  <updated>{date|rfc3339date}</updated>
+  <published>{date|rfc3339date}</published>
+  <content type="html">{desc|escape|addbreaks|xmlescape|nonempty}</content>
+ </entry>
