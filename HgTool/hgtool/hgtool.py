@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """%prog [-p|--props-file] [-r|--rev revision] [-b|--branch branch]
          [-s|--shared-dir shared_dir] [--check-outgoing] repo [dest]
 
@@ -13,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../lib/python"))
 
 from util.hg import mercurial, out, remove_path
 
-if __name__ == '__main__':
+def main():
     from optparse import OptionParser
     import logging
 
@@ -94,3 +93,8 @@ if __name__ == '__main__':
                              autoPurge=options.auto_purge)
 
     print "Got revision %s" % got_revision
+
+
+if __name__ == '__main__':
+    main()
+
