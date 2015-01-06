@@ -17,17 +17,7 @@ def main():
     import logging
 
     parser = argparse.ArgumentParser(description='Tool to do safe operations with hg.')
-    parser.add_parser.set_defaults(
-        revision=os.environ.get('HG_REV'),
-        branch=os.environ.get('HG_BRANCH', None),
-        outgoing=False,
-        propsfile=os.environ.get('PROPERTIES_FILE'),
-        loglevel=logging.INFO,
-        shared_dir=os.environ.get('HG_SHARE_BASE_DIR'),
-        clone_by_rev=False,
-        mirrors=None,
-        bundles=None,
-    )
+
     parser.add_argument(
         "-v", "--verbose", dest="loglevel", action="store_const",
         const=logging.DEBUG, help="verbose logging",
@@ -78,18 +68,26 @@ def main():
         help="Purge the destination directory (if it exists).",
         default=False)
 
-    options, args = parser.parse_args()
+    parser.add_argument(
+        "--dest", dest="dest", action="store",
+        help="Destination path.",
+        default=None)
+
+    parser.add_argument(
+        "--repo", dest="repo", action="store",
+        help="Repo path.", required=True,
+        default=None)
+
+
+    options = parser.parse_args()
+
+    if options.repo is None:
+        parser.error("No repo argument specified.")
+
+    if options.dest is None:
+        options.dest = os.path.basename(options.repo)
 
     logging.basicConfig(level=options.loglevel, format="%(message)s")
-
-    if len(args) not in (1, 2):
-        parser.error("Invalid number of arguments")
-
-    repo = args[0]
-    if len(args) == 2:
-        dest = args[1]
-    else:
-        dest = os.path.basename(repo)
 
     # Parse propsfile
     if options.propsfile:
@@ -105,12 +103,12 @@ def main():
 
     # look for and clobber outgoing changesets
     if options.outgoing:
-        if out(dest, repo):
-            remove_path(dest)
-        if options.shared_dir and out(options.shared_dir, repo):
+        if out(options.dest, options.repo):
+            remove_path(options.dest)
+        if options.shared_dir and out(options.shared_dir, options.repo):
             remove_path(options.shared_dir)
 
-    got_revision = mercurial(repo, dest, options.branch, options.revision,
+    got_revision = mercurial(options.repo, options.dest, options.branch, options.revision,
                              shareBase=options.shared_dir,
                              clone_by_rev=options.clone_by_rev,
                              mirrors=options.mirrors,
