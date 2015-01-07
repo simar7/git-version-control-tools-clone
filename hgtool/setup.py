@@ -9,8 +9,7 @@ setup(
     author='Chris AtLee',
     author_email='catlee@mozilla.com',
     packages=find_packages(),
-    # XXX: Update URL when submitted.
-    url='',
+    url='https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgtool',
     license='LICENSE',
     description='hgtool allows to do safe operations with hg',
     long_description=open('README.txt').read(),
