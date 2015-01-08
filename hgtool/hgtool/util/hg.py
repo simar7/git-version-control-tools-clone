@@ -6,8 +6,8 @@ import sys
 from urlparse import urlsplit
 from ConfigParser import RawConfigParser
 
-from util.commands import run_cmd, get_output, remove_path
-from util.retry import retry, retrier
+from commands import run_cmd, get_output, remove_path
+from redo import retrying, retrier
 
 import logging
 log = logging.getLogger(__name__)
@@ -602,7 +602,7 @@ def share(source, dest, branch=None, revision=None):
 
 
 def cleanOutgoingRevs(reponame, remote, username, sshKey):
-    outgoingRevs = retry(out, attempts=RETRY_ATTEMPTS,
+    outgoingRevs = retrying(out, attempts=RETRY_ATTEMPTS,
                          kwargs=dict(src=reponame, remote=remote,
                                      ssh_username=username, ssh_key=sshKey))
     for r in reversed(outgoingRevs):
